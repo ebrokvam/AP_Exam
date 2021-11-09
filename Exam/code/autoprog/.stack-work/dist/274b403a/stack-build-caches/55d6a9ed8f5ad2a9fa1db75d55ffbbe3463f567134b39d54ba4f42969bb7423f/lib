@@ -1,0 +1,24 @@
+? C:\Users\ebrok\Documents\Msc in Computer Science\Year 2\Advanced Programming\AP_Exam\Exam\code\autoprog\.stack-work\dist\274b403a\build\autogen\Paths_autoprog.hs
+: hash: eba946b297d3b148766113d97206f5533dcb850029a329aebfb56e591ab100a3
+C:\Users\ebrok\Documents\Msc in Computer Science\Year 2\Advanced Programming\AP_Exam\Exam\code\autoprog\src\Defs.hs:
+  hash: 778eac4cd25ddefbf3abcc39bf60447d88d8c9ba43db94716dcb464b5fdc4c95
+C:\Users\ebrok\Documents\Msc in Computer Science\Year 2\Advanced Programming\AP_Exam\Exam\code\autoprog\src\Coder.hs:
+  hash: 0a726018f5ed55a7f133edc291b81da19192d91b3e7abdd3a2e8fce118628601
+C:\Users\ebrok\Documents\Msc in Computer Science\Year 2\Advanced Programming\AP_Exam\Exam\code\autoprog\src\CoderImpl.hs:
+  hash: 1fd55d53340f0fc179d9b91b05aa49ee7b550d20f67588ec1d20b52f235e654c
+C:\Users\ebrok\Documents\Msc in Computer Science\Year 2\Advanced Programming\AP_Exam\Exam\code\autoprog\autoprog.cabal:
+  hash: f4dcc23dddfb131838b5232fd69adcded17e9718b1244ff12e785df15540ffd1
+C:\Users\ebrok\Documents\Msc in Computer Science\Year 2\Advanced Programming\AP_Exam\Exam\code\autoprog\package.yaml:
+  hash: b46679cb14f7db42ea6a70713d807062aeb7d4da37c81a710498bf7e3eb8d864
+C:\Users\ebrok\Documents\Msc in Computer Science\Year 2\Advanced Programming\AP_Exam\Exam\code\autoprog\src\ResolverImpl.hs:
+  hash: 8f9980badccbe24e3c5ff5b3403726ff37b201b7912ac9eeda56b626c97a9b3c
+C:\Users\ebrok\Documents\Msc in Computer Science\Year 2\Advanced Programming\AP_Exam\Exam\code\autoprog\src\Resolver.hs:
+  hash: b2e9af70912fb8db454fb396b71af5da519c9b6a62cbc527bdac011e15c8c304
+? C:\Users\ebrok\Documents\Msc in Computer Science\Year 2\Advanced Programming\AP_Exam\Exam\code\autoprog\.stack-work\dist\274b403a\build\autogen\cabal_macros.h
+: hash: f37bcaa0736097ed710c2355e28501eb2e7d363128b6944d5ed6735eaa35c698
+C:\Users\ebrok\Documents\Msc in Computer Science\Year 2\Advanced Programming\AP_Exam\Exam\code\autoprog\src\ParserImpl.hs:
+  hash: 3dd09a2683c07801db521691a3fc83bf4bdad485821db4d650bf832192bc4ee9
+C:\Users\ebrok\Documents\Msc in Computer Science\Year 2\Advanced Programming\AP_Exam\Exam\code\autoprog\src\Parser.hs:
+  hash: 69bc2a2f7a9f4ecb0f9401b492f3cb23263d745911f0a7a1882f95e04e7998e2
+C:\Users\ebrok\AppData\Local\Programs\stack\x86_64-windows\ghc-8.10.7\lib\include\ghcversion.h:
+  hash: c013160c9aa8a98f4638616496dce720c23ceca8ef9d6b3212b654642fbda5e4

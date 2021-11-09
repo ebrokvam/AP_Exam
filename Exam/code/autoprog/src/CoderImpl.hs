@@ -8,12 +8,18 @@ import Control.Monad (ap, liftM)
 instance Functor Tree where fmap = liftM
 instance Applicative Tree where pure = return; (<*>) = ap
 
+-- data Tree a = Found a | Choice [Tree a]
+--  deriving (Eq, Show, Read)
 instance Monad Tree where
-  return = undefined
-  (>>=) = undefined
+  return = Found
+  Found a >>= f = f a
+  Choice [] >>= _ = Choice []
+  Choice a >>= f = Choice $ [x >>= f | x <- a]
 
 pick :: [a] -> Tree a
 pick = undefined
+-- pick (a:as) -> Choice [pick a, pick as]
+
 
 solutions :: Tree a -> Int -> Maybe a -> [a]
 solutions = undefined
