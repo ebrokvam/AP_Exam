@@ -35,15 +35,15 @@ tests = testGroup "Minimal tests" [
           Left e -> return ()
           Right p -> assertFailure $ "Unexpected parse: " ++ show p,
       testCase "Keyword type" $
-        case parseStringType "B type" of
+        case parseStringType "type" of
           Left e -> return ()
           Right p -> assertFailure $ "Unexpected parse: " ++ show p,
       testCase "Keyword newtype" $
-        case parseStringType "B newtype" of
+        case parseStringType "newtype" of
           Left e -> return ()
           Right p -> assertFailure $ "Unexpected parse: " ++ show p,
       testCase "Keyword data" $
-        case parseStringType "B data" of
+        case parseStringType "data" of
           Left e -> return ()
           Right p -> assertFailure $ "Unexpected parse: " ++ show p,
       testCase "Keyword type in middle of name" $        
@@ -66,11 +66,11 @@ tests = testGroup "Minimal tests" [
       testCase "Tuple with constructor" $
         parseStringType "(a,B)" @?= Right pt4,
       testCase "Con with multiple types" $
-        parseStringType "F x y" @?= Right pt8,
+        parseStringType "F (X y)" @?= Right pt10,
       testCase "Complex 1" $
         parseStringType "F x->(y,A)" @?= Right pt5,
       testCase "Complex 2" $
-        parseStringType "F (F x)->(T (y,f5),A b)" @?= Right pt6
+        parseStringType "F (F x y)->(T (y,f5),A b)" @?= Right pt6
     ],
 
     testGroup "TDeclz tests" [
@@ -110,6 +110,10 @@ tests = testGroup "Minimal tests" [
     ],
 
     testGroup "Disambiguation Tests" [
+      testCase "Constructor parentheses" $
+        parseStringType "F x y" @?= Right pt8,
+      testCase "Constructor tighter than infix" $
+        parseStringType "F x y -> z" @?= Right pt11,
       testCase "Right-associative arrow" $
         parseStringType "a -> b -> c" @?= Right pt7
     ]
@@ -146,8 +150,32 @@ tests = testGroup "Minimal tests" [
          else do m <- pick [4,0]
                  if m > 0 then return m else pick []
       @?= tr0,
-    testCase "solutions" $
-      solutions tr0 10 Nothing @?= [3,4],
+    testGroup "solutions" [
+      testCase "Simple found 3" $
+        solutions tr1 10 Nothing @?= ["a"],
+      testCase "Simple empty" $
+        solutions tr2 10 Nothing @?= [],
+      testCase "Nested choices (BFS check)" $
+        solutions tr0 10 Nothing @?= [3,4],
+      testCase "Nested choices, empty list" $
+        solutions tr3 10 Nothing @?= [],
+      testCase "Nested 1-5 #1" $
+        solutions tr4 10 Nothing @?= [1,2,3,4,5],
+      testCase "Nested 1-5 #2" $
+        solutions tr5 10 Nothing @?= [1,2,3,4,5],
+      testCase "Exceeding n with d is nothing" $
+        solutions tr0 1 Nothing @?= [3],
+      testCase "Exceeding n with d is 5" $
+        solutions tr0 1 (Just 5) @?= [3,5],
+      testCase "Exceeding n with bigger tree #1" $
+        solutions tr4 4 (Just 6) @?= [1,2,3,4,6],
+      testCase "Exceeding n with bigger tree #2" $
+        solutions tr5 3 Nothing @?= [1,2,3],
+      testCase "n is exact size of list, no d added #1" $
+        solutions tr4 5 (Just 6) @?= [1,2,3,4,5],
+      testCase "n is exact size of list, no d added #1" $
+        solutions tr5 5 (Just 6) @?= [1,2,3,4,5]
+    ],
     testCase "produce" $
       do e <- dfs (produce [] st0)
          return $ case e of
@@ -171,9 +199,16 @@ tests = testGroup "Minimal tests" [
        pt7 = PTApp "(->)" [PTVar "a", PTApp "(->)" [PTVar "b", PTVar "c"]]
        pt8 = PTApp "F" [PTVar "x", PTVar "y"]
        pt9 = PTApp "(->)" [PTApp "(->)" [PTVar "a", PTVar "a"], PTApp "(,)" [PTApp "(->)" [PTVar "a", PTVar "a"], PTVar "a"]]
+       pt10 = PTApp "F" [PTApp "X" [PTVar "y"]]
+       pt11 = PTApp "(->)" [PTApp "F" [PTVar "x", PTVar "y"], PTVar "z"]
        td0 = TDSyn ("T", ["a"]) pt0
        st0 = STArrow (STVar "a'") (STVar "a'")
        tr0 = Choice [Choice [Found 4, Choice []], Found 3]
+       tr1 = Found "a"
+       tr2 = Choice [] :: Tree Int
+       tr3 = Choice [Choice [], Choice [Choice [], Choice []], Choice [Choice []]] :: Tree Int
+       tr4 = Choice [Found 1, Choice [Found 3, Choice [Found 5], Found 4], Found 2]
+       tr5 = Choice [Choice [Choice [Choice [Choice [Found 5], Found 4], Found 3], Found 2], Found 1]
        dfs (Found a) = [a]
        dfs (Choice ts) = concatMap dfs ts
        e0 = Lam "X" (Var "X")

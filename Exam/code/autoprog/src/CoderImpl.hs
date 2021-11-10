@@ -22,7 +22,22 @@ pick = undefined
 
 
 solutions :: Tree a -> Int -> Maybe a -> [a]
-solutions = undefined
+solutions (Found a) _ _ = [a] 
+solutions (Choice []) _ _ = []
+solutions (Choice (a:as)) n d = 
+  case a of 
+    Found x -> 
+      if n == 1
+        then [x]
+        else [x] ++ solutions (Choice as) (n-1) d
+    Choice _ -> 
+      let l = solutions (Choice as) n d 
+          len = length l
+      in if len >= n 
+        then case d of
+          Nothing -> l
+          Just d' -> l ++ [d']
+        else l ++ solutions a (n-len) d
 
 produce :: [(String,SType)] -> SType -> Tree Exp
 produce = undefined

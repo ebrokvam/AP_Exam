@@ -1,14 +1,13 @@
 -module(server).
 
--export([start/1, set/4, read/2, insert/4, update/4, all_items/1, stop/1]).
+-export([start/1, set/4, read/2, insert/4, update/4, upsert/3, all_items/1, stop/1]).
 
 %% gen_server functions
 -export([init/1, handle_call/3, handle_cast/2]).
 
 -behaviour(gen_server).
 
-% export functions
-
+%% export functions
 start(Cap) ->
 	gen_server:start(?MODULE, Cap, []).
 
@@ -24,16 +23,21 @@ insert(FS, Key, Value, C) ->
 update(FS, Key, Value, C) ->
 	gen_server:call(FS, {update, {Key, Value, C}}).
 
+upsert(FS, Key, Fun) ->
+  gen_server:call(FS, {upsert, {Key, Fun}}).
+
 all_items(FS) ->
 	gen_server:call(FS, {all_items}).
 
 stop(FS) ->
 	gen_server:stop(FS).
 
-% server functions
-
+%% server functions
 init(Cap) -> 
 	{ok, {Cap, []}}.
+
+
+%% TODO: CHECK/TEST KEY COHERENCY AND KEY CONCURRENCY
 
 handle_call(Request, _From, {Cap, Queue} = State) -> 
 	case Request of
@@ -66,12 +70,15 @@ handle_call(Request, _From, {Cap, Queue} = State) ->
 				false ->
 					insert_item(Item, State)
 			end;
+		{upsert, {Key, Fun}} ->
+			upsert_item(Key, Fun, State);
 		{all_items} ->
 			{reply, Queue, State}
 	end.
 
-handle_cast(Request, State) -> undefined.
+handle_cast(_Request, _State) -> undefined.
 
+%% separation of concern functions
 insert_item({_Key, _Val, C} = Item, {Cap, Queue} = State) ->
 	case C =< Cap of
 		true ->
@@ -103,6 +110,34 @@ update_item({Key, _Val, C} = Item, {Cap, Queue} = State) ->
 			{reply, {error, "Broken capacity invariant"}, State}
 	end.
 
+upsert_item(Key, Fun, {_Cap, Queue} = State) ->
+	case lists:keyfind(Key, 1, Queue) of
+		{Key, Val, _C} ->
+			Arg = {existing, Val};
+		false ->
+			Arg = new
+	end,
+	try
+		upsert_handle_result(Fun(Arg), Arg, Key, State)
+	catch
+		_ : Ex ->
+			upsert_handle_result(Ex, Arg, Key, State)
+	end.
+
+upsert_handle_result(Result, Arg, Key, State) ->
+	case Result of
+		{new_value, NewVal, NewC} ->
+			case Arg of
+				{existing, _} ->
+					update_item({Key, NewVal, NewC}, State);
+				new ->
+					insert_item({Key, NewVal, NewC}, State)
+			end;
+		_ ->
+			{reply, ok, State}
+	end.
+
+%% helper functions
 is_exceeded_capacity(Cap, Queue) ->
 	sum_capacities(Queue) > Cap.
 

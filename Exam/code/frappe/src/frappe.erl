@@ -35,9 +35,9 @@ update(FS, Key, Value, C) ->
   server:update(FS, Key, Value, C).
 
 upsert(FS, Key, Fun) ->
-  not_implemented.
+  server:upsert(FS, Key, Fun).
 
-stable(FS, Key, Ref) ->
+stable(_FS, _Key, _Ref) ->
   not_implemented.
 
 all_items(FS) ->

@@ -15,4 +15,4 @@ resolve tce tve pt =
           f st
 
 declare :: [TDecl] -> EM TCEnv
-declare = undefined
+declare [] = Right []
