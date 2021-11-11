@@ -24,4 +24,15 @@ prop_cache_under_capacity() -> undefined.
 
 prop_capacity_invariant() -> undefined.
 
+key() ->
+    oneof([atom(), int(), real()]).
+
+atom() ->
+    elements([a,b,c,d]).
+
+%% prop for no duplicate keys
+
 %% TODO: use limited versions if I don't implement stable/2
+
+
+%% transformation functions

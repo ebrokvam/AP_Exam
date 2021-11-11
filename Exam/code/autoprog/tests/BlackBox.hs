@@ -51,7 +51,15 @@ tests = testGroup "Minimal tests" [
       testCase "Keyword newtype in middle of name" $        
         parseStringType "newtype24" @?= Right tVName2,
       testCase "Keyword data in middle of name" $        
-        parseStringType "data24" @?= Right tVName3
+        parseStringType "data24" @?= Right tVName3,
+      testCase "pType with all illegal names" $
+        case parseStringType "F* x* -> (y*, A*)" of
+          Left e -> return ()
+          Right p -> assertFailure $ "Unexpected parse: " ++ show p,
+      testCase "tDeclz with all illegal names" $
+        case parseStringTDeclz "data T* = C* {f*, f* :: a* -> a*}" of
+          Left e -> return ()
+          Right p -> assertFailure $ "Unexpected parse: " ++ show p
     ],
 
     testGroup "PType tests" [
@@ -74,8 +82,28 @@ tests = testGroup "Minimal tests" [
     ],
 
     testGroup "TDeclz tests" [
-      testCase "...TDeclz" $
-        parseStringTDeclz "type T a = a -> a" @?= Right [td0]
+      testCase "Empty list of declarations" $
+        parseStringTDeclz "" @?= Right [],
+      testCase "Parse declare type" $
+        parseStringTDeclz "type X a=a->a" @?= Right [td0],
+      testCase "Parse declare newtype" $
+        parseStringTDeclz "newtype T=B{c ::a}" @?= Right [TDRcd ("T", []) "B" [("c", PTVar "a")]],
+      testCase "Parse declare data no fields" $
+        parseStringTDeclz "data T=C {}" @?= Right [TDRcd ("T", []) "C" []],
+      testCase "Parse declare data one field" $
+        parseStringTDeclz "data T=C {f1::a->a}" @?= Right [TDRcd ("T", []) "C" [("f1", pt0)]],
+      testCase "Parse data multiple fields" $
+        parseStringTDeclz "data T=C {f1, f2::a->a}" @?= Right [TDRcd ("T", []) "C" [("f1", pt0), ("f2", pt0)]],
+      testCase "Parse data duplicate name fields" $
+        parseStringTDeclz "data T=C {f, f::a->a}" @?= Right [TDRcd ("T", []) "C" [("f", pt0), ("f", pt0)]],
+      testCase "Prase synonym types" $
+        parseStringTDeclz "type T a b c = a" @?= Right [TDSyn ("T", ["a", "b", "c"]) (PTVar "a")],
+      testCase "Prase two declarations" $
+        parseStringTDeclz "type T=a; type T=b;" @?= Right [TDSyn ("T", []) (PTVar "a"), TDSyn ("T", []) (PTVar "b")],
+      testCase "Ignore semicolon before declaration" $
+        parseStringTDeclz ";type T a=a->a" @?= Right [td0],
+      testCase "Parse declare with bigger pType" $
+        parseStringTDeclz "type T a = F x->(y,A)" @?= Right [TDSyn ("T", ["a"]) pt5]
     ],
 
     testGroup "Whitespace Tests" [
@@ -102,11 +130,19 @@ tests = testGroup "Minimal tests" [
       testCase "Comment in middle" $
         parseStringType "a{-Test-}-> a" @?= Right pt0,
       testCase "Comment that does not end" $
-        case parseStringType "a{-" of
+        case parseStringType "a {-" of
           Left e -> return ()
           Right p -> assertFailure $ "Unexpected parse: " ++ show p,
+      testCase "Comment in middle of declaration" $
+        parseStringTDeclz "data T=C {{-TODO: add fields-}}" @?= Right [TDRcd ("T", []) "C" []],
       testCase "Space between everything pType" $
-        parseStringType " F ( F x y ) -> ( T ( y , f5 ) , A b ) " @?= Right pt6
+        parseStringType " F ( F x y ) -> ( T ( y , f5 ) , A b ) " @?= Right pt6,
+      testCase "Space between everything declare type" $
+        parseStringTDeclz "   type T  a = a -> a " @?= Right [td0],
+      testCase "Space between everything declare newtype" $
+        parseStringTDeclz " newtype   T = B { c :: a } " @?= Right [TDRcd ("T", []) "B" [("c", PTVar "a")]],
+      testCase "Space between everything declare data" $
+        parseStringTDeclz "  \t data T a t1 d = C \n {  f1 ,  f2 :: a -> a }   " @?= Right [TDRcd ("T", ["a", "t1", "d"]) "C" [("f1", pt0), ("f2", pt0)]]
     ],
 
     testGroup "Disambiguation Tests" [
@@ -128,28 +164,96 @@ tests = testGroup "Minimal tests" [
         resolve tce0 (\x -> return $ STVar (x++"'")) pt0 @?= Right (STArrow (STVar "a'") (STVar "a'")),
       testCase "Test Nested" $
         resolve tce0 (\x -> return $ STVar (x++"'")) pt9 @?= Right (STArrow (STArrow (STVar "a'") (STVar "a'")) (STProd (STArrow (STVar "a'") (STVar "a'")) (STVar "a'"))),
-      testCase "Test bad constructor" $
+      testCase "Test non-existent constructor" $
         case resolve tce0 (\x -> return $ STVar (x++"'")) pt1 of
           Left e -> return ()
-          Right p -> assertFailure $ "Unexpected parse: " ++ show p,
+          Right p -> assertFailure $ "Unexpected resolve: " ++ show p,
+      testCase "Test bad args in constructor" $
+        case resolve tce0 (\x -> return $ STVar (x++"'")) (PTApp "(,)" [PTVar "x"]) of
+          Left e -> return ()
+          Right p -> assertFailure $ "Unexpected resolve: " ++ show p,
       testCase "Test bad variable environment" $
         case resolve tce0 (\x -> Left "nope") pt2 of
           Left e -> return ()
-          Right p -> assertFailure $ "Unexpected parse: " ++ show p
+          Right p -> assertFailure $ "Unexpected resolve: " ++ show p,
+      testCase "Example from spec" $
+        resolve tce1 (\x -> return $ STVar x) (PTApp "T" [PTApp "(,)" [PTVar "b", PTVar "b"]]) @?= Right st1
     ],
-    testCase "declare" $
-      do tce <- declare [td0]
-         tf <- case lookup "T" tce of Just tf -> return tf; _ -> Left "no T"
-         tf [STVar "a'"]
-      @?= Right st0
+    testGroup "Declare" [
+      testCase "Empty declaration list" $
+        declare [] @?= Right [],
+      testCase "Declare synonym with var" $
+        testDeclare [td2] "T" [STVar "a'"] @?= Right st2,
+      testCase "Declare synonym for (->)" $
+        testDeclare [td0] "X" [STVar "a'"] @?= Right st0,
+      testCase "Declare synonym for (,)" $
+        testDeclare [td3] "Y" [STVar "a'"] @?= Right st3,
+      testCase "Declare constructor with two type variables" $
+        testDeclare [td16] "T" [STVar "a'"] @?= Right st2,
+      testCase "Example from specs" $
+        testDeclare [td1] "Z" [STProd (STVar "b") (STVar "b")] @?= Right st1,
+      testCase "Four declarations" $
+        testDeclare [td0, td1, td2, td3] "Z" [STProd (STVar "b") (STVar "b")] @?= Right st1,
+      testGroup "Semantics" [
+        testCase "Non-distinct type constructor (fail)" $
+          case testDeclare [td0, td0] "X" [STVar "a"] of
+            Left e -> return ()
+            Right p -> assertFailure $ "Unexpected resolve: " ++ show p,
+        testCase "Refer to declaration ahead in list (fail)" $
+          case testDeclare [td14, td15] "T" [STVar "a"] of
+            Left e -> return ()
+            Right p -> assertFailure $ "Unexpected resolve: " ++ show p,
+        testCase "Refer to previous declaration (success)" $
+          testDeclare [td15, td4] "T" [STVar "a"] @?= Right st6,
+        testCase "Non-distinct LHS type-variables (fail)" $
+          case testDeclare [td4] "X" [STVar "a"] of
+            Left e -> return ()
+            Right p -> assertFailure $ "Unexpected resolve: " ++ show p,
+        testCase "RHS type-variable not on LHS (fail)" $
+          case testDeclare [td5] "X" [STVar "a"] of
+            Left e -> return ()
+            Right p -> assertFailure $ "Unexpected resolve: " ++ show p,
+        testCase "Non-distinct field names (fail)" $
+          case testDeclare [td6] "X" [STVar "a"] of
+            Left e -> return ()
+            Right p -> assertFailure $ "Unexpected resolve: " ++ show p,
+        testCase "Same field name in two declarations (fail)" $
+          case testDeclare [td7, td8] "A" [STVar "a"] of
+            Left e -> return ()
+            Right p -> assertFailure $ "Unexpected resolve: " ++ show p,
+        testCase "Field name keyword fst (fail)" $
+          case testDeclare [td9] "X" [STVar "a"] of
+            Left e -> return ()
+            Right p -> assertFailure $ "Unexpected resolve: " ++ show p,
+        testCase "Field name keyword snd (fail)" $
+          case testDeclare [td10] "X" [STVar "a"] of
+            Left e -> return ()
+            Right p -> assertFailure $ "Unexpected resolve: " ++ show p,     
+        testCase "Matching type and record constructors (succeed)" $
+          testDeclare [td11] "T" [STVar "a"] @?= Right st4,
+        testCase "Matching variable and field names (succeed)" $
+          testDeclare [td12] "T" [STVar "a"] @?= Right st5,
+        testCase "Recursive declaration (fail)" $
+          case testDeclare [td13] "T" [STVar "a"] of
+            Left e -> return ()
+            Right p -> assertFailure $ "Unexpected resolve: " ++ show p
+      ]
+    ],
+    testCase "Declare, then Resolve example from specs" $
+      do tce <- declare [td1]
+         st <- resolve tce (\x -> return $ STVar x) (PTApp "T" [PTApp "(,)" [PTVar "b", PTVar "b"]])
+         return st
+      @?= Right st1
   ],
   testGroup "Coder" [
+    testGroup "pick" [
     testCase "pick" $
-      do n <- pick [0,3]
-         if n > 0 then return n
-         else do m <- pick [4,0]
-                 if m > 0 then return m else pick []
-      @?= tr0,
+        do n <- pick [0,3]
+           if n > 0 then return n
+           else do m <- pick [4,0]
+                   if m > 0 then return m else pick []
+        @?= tr0
+    ],
     testGroup "solutions" [
       testCase "Simple found 3" $
         solutions tr1 10 Nothing @?= ["a"],
@@ -173,8 +277,10 @@ tests = testGroup "Minimal tests" [
         solutions tr5 3 Nothing @?= [1,2,3],
       testCase "n is exact size of list, no d added #1" $
         solutions tr4 5 (Just 6) @?= [1,2,3,4,5],
-      testCase "n is exact size of list, no d added #1" $
-        solutions tr5 5 (Just 6) @?= [1,2,3,4,5]
+      testCase "n is exact size of list, no d added #2" $
+        solutions tr5 5 (Just 6) @?= [1,2,3,4,5],
+      testCase "n solutions to infinite tree" $
+        solutions tr6 5 (Just 0) @?= [1,1,1,1,1,0]
     ],
     testCase "produce" $
       do e <- dfs (produce [] st0)
@@ -182,6 +288,7 @@ tests = testGroup "Minimal tests" [
                     Lam x (Var x') | x' == x -> e0
                     _ -> e 
       @?= [e0]
+    -- TODO: test combination of modules!!
     ]]
  where tVName0 = PTVar "b1_'23"
        tVName1 = PTVar "type24"
@@ -201,14 +308,50 @@ tests = testGroup "Minimal tests" [
        pt9 = PTApp "(->)" [PTApp "(->)" [PTVar "a", PTVar "a"], PTApp "(,)" [PTApp "(->)" [PTVar "a", PTVar "a"], PTVar "a"]]
        pt10 = PTApp "F" [PTApp "X" [PTVar "y"]]
        pt11 = PTApp "(->)" [PTApp "F" [PTVar "x", PTVar "y"], PTVar "z"]
-       td0 = TDSyn ("T", ["a"]) pt0
+       td0 = TDSyn ("X", ["a"]) pt0
+       td1 = TDRcd ("Z", ["a"]) "C" [("x", PTVar "a"), ("f", PTApp "(->)" [PTVar "a", PTVar "a"])]
+       td2 = TDSyn ("T", ["a"]) pt2
+       td3 = TDSyn ("Y", ["a"]) (PTApp "(,)" [PTVar "a", PTVar "a"])
+       td4 = TDSyn ("X", ["a, a"]) (PTApp "(,)" [PTVar "a", PTVar "a"])
+       td5 = TDSyn ("X", ["a"]) (PTApp "(,)" [PTVar "b", PTVar "b"])
+       td6 = TDRcd ("X", ["a"]) "C" [("x", PTVar "a"), ("x", PTVar "a")]
+       td7 = TDRcd ("A", ["a"]) "C" [("x", PTVar "a")]
+       td8 = TDRcd ("B", ["a"]) "C" [("x", PTVar "a")]
+       td9 = TDRcd ("X", ["a"]) "C" [("fst", PTVar "a")]
+       td10 = TDRcd ("X", ["a"]) "C" [("snd", PTVar "a")]
+       td11 = TDRcd ("T", ["a"]) "T" [("t", PTVar "a")]
+       td12 = TDRcd ("T", ["t"]) "T" [("t", PTVar "t")]
+       td13 = TDSyn ("T", ["a"]) (PTApp "(->)" [PTVar "a", PTApp "T" [PTVar "a"]])
+       td14 = TDSyn ("T", ["a"]) (PTApp "(->)" [PTVar "a", PTApp "U" [PTVar "a"]])
+       td15 = TDSyn ("U", ["x"]) (PTVar "x")
+       td16 = TDSyn ("T", ["a", "b"]) (PTApp "(->)" [PTVar "a", PTVar "b"])
        st0 = STArrow (STVar "a'") (STVar "a'")
+       st1 = STRcd "C" [("x", STProd (STVar "b") (STVar "b")), ("f", STArrow (STProd (STVar "b") (STVar "b")) (STProd (STVar "b") (STVar "b")))]
+       st2 = STVar "a'"
+       st3 = STProd (STVar "a'") (STVar "a'")
+       st4 = STRcd "T" [("a", STVar "a")]
+       st5 = STRcd "T" [("t", STVar "a")]
+       st6 = STProd (STVar "a") st7
+       st7 = STVar "x"
        tr0 = Choice [Choice [Found 4, Choice []], Found 3]
        tr1 = Found "a"
        tr2 = Choice [] :: Tree Int
        tr3 = Choice [Choice [], Choice [Choice [], Choice []], Choice [Choice []]] :: Tree Int
        tr4 = Choice [Found 1, Choice [Found 3, Choice [Found 5], Found 4], Found 2]
        tr5 = Choice [Choice [Choice [Choice [Choice [Found 5], Found 4], Found 3], Found 2], Found 1]
+       tr6 = Choice [tr6, Found 1]
        dfs (Found a) = [a]
        dfs (Choice ts) = concatMap dfs ts
        e0 = Lam "X" (Var "X")
+       
+tce1 = tce0 ++ [("T", \ts -> 
+  case ts of
+    [t] -> return $ STRcd "C" [("x", t), ("f", STArrow t t)]
+    _ -> Left "bad args for T")]
+
+
+testDeclare :: [TDecl] -> TCName -> [SType] -> EM SType
+testDeclare ds tc st = do 
+  tce <- declare ds
+  tf <- case lookup tc tce of Just tf -> return tf; _ -> Left "no T"
+  tf st

@@ -17,9 +17,9 @@ instance Monad Tree where
   Choice a >>= f = Choice $ [x >>= f | x <- a]
 
 pick :: [a] -> Tree a
-pick = undefined
--- pick (a:as) -> Choice [pick a, pick as]
-
+pick [] = Choice []
+pick [x] = return x
+pick as = Choice $ [pick [x] | x <- as]
 
 solutions :: Tree a -> Int -> Maybe a -> [a]
 solutions (Found a) _ _ = [a] 
