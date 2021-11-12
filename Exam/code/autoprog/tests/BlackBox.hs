@@ -173,7 +173,7 @@ tests = testGroup "All tests" [
           Left _ -> return ()
           Right p -> assertFailure $ "Unexpected resolve: " ++ show p,
       testCase "Test bad variable environment" $
-        case resolve tce0 (\x -> Left "nope") pt2 of
+        case resolve tce0 (\_ -> Left "nope") pt2 of
           Left _ -> return ()
           Right p -> assertFailure $ "Unexpected resolve: " ++ show p,
       testCase "Example from spec" $
