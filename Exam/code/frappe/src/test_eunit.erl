@@ -11,6 +11,7 @@ testsuite() ->
        [ 
          test_fresh(),
          test_fresh_multiple(),
+         test_fresh_negative_cap(),
          test_stop(),
          test_stop_multiple()
        ]
@@ -58,13 +59,18 @@ testsuite() ->
          test_upsert_insert_returns_wrong(),
          test_upsert_insert_function_throws_newval(),
          test_upsert_insert_function_throws_error(),
-         
+
          test_upsert_update(),
          test_upsert_update_over_cap(),
          test_upsert_update_nonexisting(),
          test_upsert_update_returns_wrong(),
          test_upsert_update_function_throws_newval(),
          test_upsert_update_function_throws_error()
+       ]
+      },
+      {"Stable tests", spawn,
+       [ 
+         % TODO
        ]
       },
       {"LRU tests", spawn,
@@ -93,6 +99,11 @@ testsuite() ->
        [
          % TODO
        ]
+      },
+      {"Efficienty tests", spawn,
+       [
+         % TODO
+       ]
       }
     ].
 
@@ -108,6 +119,12 @@ test_fresh_multiple() ->
       ?assertMatch({ok, _}, frappe:fresh(5)),
       ?assertMatch({ok, _}, frappe:fresh(6)),
       ?assertMatch({ok, _}, frappe:fresh(12))
+    end }.
+
+test_fresh_negative_cap() ->
+  {"Start frappe server with negative capacity",
+    fun () ->
+      ?assertMatch({error, _}, frappe:fresh(-5))
     end }.
 
 test_stop() ->
@@ -454,8 +471,6 @@ test_LRU_upsert_no_update_does_not_change_order() ->
       ?assertEqual({ok, val}, frappe:read(FS, key2))
     end }.
 
-
-% TODO: These tests aren't quite right
 test_key_coherency_set() ->
   {"Make two set calls to same key in sequencial order",
     fun () ->
@@ -485,6 +500,3 @@ test_key_coherency_upsert() ->
       ok = frappe:upsert(FS, key, fun({existing, Val}) -> {new_value, Val+1, 3} end),
       ?assertEqual({ok, 3}, frappe:read(FS, key))
     end }.
-
-% c(frappe), c(server), c(test_eunit), test_eunit:test_all().
-

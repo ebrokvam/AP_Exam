@@ -1,15 +1,11 @@
--- Put your Coder implementation in this file
 module CoderImpl where
 
 import Defs
 import Control.Monad (ap, liftM)
 
--- no need to touch these
 instance Functor Tree where fmap = liftM
 instance Applicative Tree where pure = return; (<*>) = ap
 
--- data Tree a = Found a | Choice [Tree a]
---  deriving (Eq, Show, Read)
 instance Monad Tree where
   return = Found
   Found a >>= f = f a

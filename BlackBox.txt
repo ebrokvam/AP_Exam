@@ -1,0 +1,183 @@
+All tests
+  Parser
+    Name Tests
+      Simple var name:                                   OK
+      Var name with all possible chars:                  OK
+      Var name with illegal char:                        FAIL
+        tests\BlackBox.hs:28:
+        Unexpected parse: PTVar "b"
+        Use -p '/Var name with illegal char/' to rerun this test only.
+      Simple con name:                                   OK
+      Con name with all possible chars:                  OK
+      Con name with illegal char:                        FAIL
+        tests\BlackBox.hs:36:
+        Unexpected parse: PTApp "B" []
+        Use -p '/Con name with illegal char/' to rerun this test only.
+      Keyword type:                                      OK
+      Keyword newtype:                                   OK
+      Keyword data:                                      OK
+      Keyword type in middle of name:                    OK
+      Keyword newtype in middle of name:                 OK
+      Keyword data in middle of name:                    OK
+      pType with all illegal names:                      FAIL
+        tests\BlackBox.hs:58:
+        Unexpected parse: PTApp "F" []
+        Use -p '/pType with all illegal names/' to rerun this test only.
+      tDeclz with all illegal names:                     OK
+    PType tests
+      Simple assigning:                                  OK
+      Con with var:                                      OK
+      Simple parentheses:                                OK
+      Simple tuple:                                      OK
+      Tuple with constructor:                            OK
+      Con with multiple types:                           OK
+      Complex 1:                                         OK
+      Complex 2:                                         OK
+    TDeclz tests
+      Empty list of declarations:                        OK
+      Parse declare type:                                OK
+      Parse declare newtype:                             FAIL
+        tests\BlackBox.hs:90:
+        expected: Right [TDRcd ("T",[]) "B" [("c",PTVar "a")]]
+         but got: Left "\"parse error\" (line 1, column 12):\nunexpected \"c\"\nexpecting \"{-\""
+        Use -p '/Parse declare newtype/' to rerun this test only.
+      Parse declare data no fields:                      OK
+      Parse declare data one field:                      OK
+      Parse data multiple fields:                        OK
+      Parse data duplicate name fields:                  OK
+      Prase synonym types:                               OK
+      Prase two declarations:                            OK
+      Ignore semicolon before declaration:               OK
+      Parse declare with bigger pType:                   OK
+    Whitespace Tests
+      Space between assigning:                           OK
+      Tab between assigning:                             OK
+      Newline between assigning:                         OK
+      A lof of whitespace between assigning:             OK
+      Space at start:                                    OK
+      Space at end:                                      OK
+      Space between parantheses:                         OK
+      Space between comma:                               OK
+      Comment at start:                                  OK
+      Comment at end:                                    OK
+      Comment in middle:                                 OK
+      Comment that does not end:                         FAIL
+        tests\BlackBox.hs:135:
+        Unexpected parse: PTVar "a"
+        Use -p '/Comment that does not end/' to rerun this test only.
+      Comment in middle of declaration:                  OK
+      Space between everything pType:                    OK
+      Space between everything declare type:             FAIL
+        tests\BlackBox.hs:141:
+        expected: Right [TDSyn ("X",["a"]) (PTApp "(->)" [PTVar "a",PTVar "a"])]
+         but got: Right [TDSyn ("T",["a"]) (PTApp "(->)" [PTVar "a",PTVar "a"])]
+        Use -p '/Space between everything declare type/' to rerun this test only.
+      Space between everything declare newtype:          OK
+      Space between everything declare data:             OK
+    Disambiguation Tests
+      Constructor parentheses:                           OK
+      Constructor tighter than infix:                    OK
+      Right-associative arrow:                           OK
+  Resolver
+    resolve
+      Test PTVar:                                        OK
+      Test STProd:                                       OK
+      Test STArrow:                                      OK
+      Test Nested:                                       OK
+      Test non-existent constructor:                     OK
+      Test bad args in constructor:                      OK
+      Test bad variable environment:                     OK
+      Example from spec:                                 OK
+    Declare
+      Empty declaration list:                            OK
+      Declare synonym with var:                          FAIL
+        tests\BlackBox.hs:188:
+        expected: Right (STVar "a'")
+         but got: Left "incomplete"
+        Use -p '/Declare synonym with var/' to rerun this test only.
+      Declare synonym for (->):                          FAIL
+        tests\BlackBox.hs:190:
+        expected: Right (STArrow (STVar "a'") (STVar "a'"))
+         but got: Left "incomplete"
+        Use -p '/Declare synonym for (->)/' to rerun this test only.
+      Declare synonym for (,):                           FAIL
+        tests\BlackBox.hs:192:
+        expected: Right (STProd (STVar "a'") (STVar "a'"))
+         but got: Left "incomplete"
+        Use -p '/Declare synonym for (,)/' to rerun this test only.
+      Declare constructor with two type variables:       FAIL
+        tests\BlackBox.hs:194:
+        expected: Right (STVar "a'")
+         but got: Left "incomplete"
+        Use -p '/Declare constructor with two type variables/' to rerun this test only.
+      Example from specs:                                FAIL
+        tests\BlackBox.hs:196:
+        expected: Right (STRcd "C" [("x",STProd (STVar "b") (STVar "b")),("f",STArrow (STProd (STVar "b") (STVar "b")) (STProd (STVar "b") (STVar "b")))])
+         but got: Left "incomplete"
+        Use -p '/Example from specs/' to rerun this test only.
+      Four declarations:                                 FAIL
+        tests\BlackBox.hs:198:
+        expected: Right (STRcd "C" [("x",STProd (STVar "b") (STVar "b")),("f",STArrow (STProd (STVar "b") (STVar "b")) (STProd (STVar "b") (STVar "b")))])
+         but got: Left "incomplete"
+        Use -p '/Four declarations/' to rerun this test only.
+      Semantics
+        Non-distinct type constructor (fail):            OK
+        Refer to declaration ahead in list (fail):       OK
+        Refer to previous declaration (success):         FAIL
+          tests\BlackBox.hs:209:
+          expected: Right (STProd (STVar "a") (STVar "x"))
+           but got: Left "incomplete"
+          Use -p '/Refer to previous declaration (success)/' to rerun this test only.
+        Non-distinct LHS type-variables (fail):          OK
+        RHS type-variable not on LHS (fail):             OK
+        Non-distinct field names (fail):                 OK
+        Same field name in two declarations (fail):      OK
+        Field name keyword fst (fail):                   OK
+        Field name keyword snd (fail):                   OK
+        Matching type and record constructors (succeed): FAIL
+          tests\BlackBox.hs:235:
+          expected: Right (STRcd "T" [("a",STVar "a")])
+           but got: Left "incomplete"
+          Use -p '/Matching type and record constructors (succeed)/' to rerun this test only.
+        Matching variable and field names (succeed):     FAIL
+          tests\BlackBox.hs:237:
+          expected: Right (STRcd "T" [("t",STVar "a")])
+           but got: Left "incomplete"
+          Use -p '/Matching variable and field names (succeed)/' to rerun this test only.
+        Recursive declaration (fail):                    OK
+    Declare, then Resolve example from specs:            FAIL
+      tests\BlackBox.hs:245:
+      expected: Right (STRcd "C" [("x",STProd (STVar "b") (STVar "b")),("f",STArrow (STProd (STVar "b") (STVar "b")) (STProd (STVar "b") (STVar "b")))])
+       but got: Left "incomplete"
+      Use -p '/Declare, then Resolve example from specs/' to rerun this test only.
+  Coder
+    Pick
+      Pick empty:                                        OK
+      Pick one choice:                                   OK
+      Pick multiple choices:                             OK
+      Pick multiple levels:                              OK
+      Pick bigger tree:                                  OK
+      Pick huge tree:                                    OK
+    solutions
+      Simple found 3:                                    OK
+      Simple empty:                                      OK
+      Nested choices (BFS check):                        OK
+      Nested choices, empty list:                        OK
+      Nested 1-5 #1:                                     OK
+      Nested 1-5 #2:                                     OK
+      Exceeding n with d is nothing:                     OK
+      Exceeding n with d is 5:                           OK
+      Exceeding n with bigger tree #1:                   OK
+      Exceeding n with bigger tree #2:                   OK
+      n is exact size of list, no d added #1:            OK
+      n is exact size of list, no d added #2:            OK
+      n solutions to infinite tree:                      OK
+    Produce
+      produce:                                           FAIL
+        Exception: Prelude.undefined
+        CallStack (from HasCallStack):
+          error, called at libraries\base\GHC\Err.hs:79:14 in base:GHC.Err
+          undefined, called at src\CoderImpl.hs:43:11 in autoprog-0.0.0-47SS6bPL6nfL22mnydv0Fa:CoderImpl
+        Use -p '/produce/' to rerun this test only.
+
+17 out of 101 tests failed (0.03s)

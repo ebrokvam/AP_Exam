@@ -16,7 +16,6 @@
          stop/1
         ]).
 
-% You may have other exports as well
 -export([]).
 
 fresh(Cap) ->

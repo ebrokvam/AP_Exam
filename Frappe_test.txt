@@ -1,0 +1,78 @@
+Failed! Reason:
+{'EXIT',{bad_property,undefined}}
+After 1 tests.
+....................................................................................................
+OK, passed 100 tests
+....................................................................................................
+OK, passed 100 tests
+Failed! Reason:
+{'EXIT',{bad_property,undefined}}
+After 1 tests.
+======================== EUnit ========================
+Start/stop tests
+  test_eunit: test_fresh (Start a frappe server)...ok
+  test_eunit: test_fresh_multiple (Start multiple frappe servers)...ok
+  test_eunit: test_fresh_negative_cap (Start frappe server with negative capacity)...ok
+  test_eunit: test_stop (Start and stop a frappe server)...ok
+  test_eunit: test_stop_multiple (Start and stop multiple frappe servers)...ok
+  [done in 0.078 s]
+Insert tests
+  test_eunit: test_insert (Insert item)...ok
+  test_eunit: test_insert_over_cap (Insert that breaks capacity invariant)...ok
+  test_eunit: test_insert_existing (Insert item with key that exists)...ok
+  [done in 0.047 s]
+Read tests
+  test_eunit: test_read_existing (Read existing item)...ok
+  test_eunit: test_read_nonexisting (Read non-existing item)...ok
+  [done in 0.031 s]
+Update tests
+  test_eunit: test_update (Update existing item)...ok
+  test_eunit: test_update_over_cap (Update to break capacity invariant)...ok
+  test_eunit: test_update_nonexisting (Update nonexisting item)...ok
+  [done in 0.047 s]
+Set tests
+  test_eunit: test_set_nonexisting (Set new item that does not break capacity invariant)...ok
+  test_eunit: test_set_nonexisting_then_read (Set new item that does not break capacity invariant and read)...ok
+  test_eunit: test_set_nonexisting_over_cap (Set new item that does break capacity invariant)...ok
+  test_eunit: test_set_existing_then_read (Set existing item so that it does not break capacity invariant)...ok
+  test_eunit: test_set_existing_over_cap (Set existing item so that it does break capacity invariant)...ok
+  [done in 0.078 s]
+All_Items tests
+  test_eunit: test_all_items (Insert three items then call all_items/1)...ok
+  test_eunit: test_all_items_empty (Call all_items/1 on an empty cache)...ok
+  [done in 0.032 s]
+Upsert tests
+  test_eunit: test_upsert_insert (Call upsert to insert a new item)...ok
+  test_eunit: test_upsert_insert_over_cap (Call upsert to insert a new item and break capacity invariant)...ok
+  test_eunit: test_upsert_insert_existing (Call upsert to insert an already existing key (bad_arg to function))...ok
+  test_eunit: test_upsert_insert_returns_wrong (Call upsert to insert new item with function that returns incorrect response)...ok
+  test_eunit: test_upsert_insert_function_throws_newval (Call upsert with function that throws a newvalue and then inserts)...ok
+  test_eunit: test_upsert_insert_function_throws_error (Call upsert to insert new item with function that throws an error)...ok
+  test_eunit: test_upsert_update (Call upsert to update an existing item)...ok
+  test_eunit: test_upsert_update_over_cap (Call upsert to update an item and break capacity invariant)...ok
+  test_eunit: test_upsert_update_nonexisting (Call upsert to update a nonexisting key (bad_arg to function))...ok
+  test_eunit: test_upsert_update_returns_wrong (Call upsert to update with function that returns incorrect response)...ok
+  test_eunit: test_upsert_update_function_throws_newval (Call upsert with function that throws a newvalue and then updates)...ok
+  test_eunit: test_upsert_update_function_throws_error (Call upsert to update with function that tries to add integer to string)...ok
+  [done in 0.187 s]
+Stable tests
+LRU tests
+  test_eunit: test_LRU_set_removes_item (Test LRU holds for set function)...ok
+  test_eunit: test_LRU_insert_removes_item (Test LRU holds for insert function)...ok
+  test_eunit: test_LRU_update_removes_item (Test LRU holds for update function)...ok
+  test_eunit: test_LRU_upsert_insert_removes_item (Test LRU holds for upsert function when inserting)...ok
+  test_eunit: test_LRU_upsert_update_removes_item (Test LRU holds for upsert function when updating)...ok
+  test_eunit: test_LRU_read_changes_order (Test changing of order by adding two items, reading LRU, inserting another item to break capacity, then attempt to read popped item)...ok
+  test_eunit: test_LRU_update_changes_order (Test changing of order by adding two items, updating LRU, inserting another item to break capacity, then attempt to read popped item)...ok
+  test_eunit: test_LRU_upsert_update_changes_order_on_success (Test changing of order by adding two items, successfully upsert updating LRU, inserting another item to break capacity, then attempt to read popped item)...ok
+  test_eunit: test_LRU_upsert_no_update_does_not_change_order (Test changing of order by adding two items, unsuccessfully upsert updating LRU, inserting another item to break capacity, then attempt to read popped item)...ok
+  [done in 0.156 s]
+Key coherency tests
+  test_eunit: test_key_coherency_set (Make two set calls to same key in sequencial order)...ok
+  test_eunit: test_key_coherency_update (Make two update calls to same key in sequencial order)...ok
+  test_eunit: test_key_coherency_upsert (Make two upsert calls to same key in sequencial order)...ok
+  [done in 0.047 s]
+Key concurrency tests
+Efficienty tests
+=======================================================
+  All 44 tests passed.

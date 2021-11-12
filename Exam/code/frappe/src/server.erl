@@ -9,7 +9,10 @@
 
 %% export functions
 start(Cap) ->
-	gen_server:start(?MODULE, Cap, []).
+	case Cap > 0 of
+		true ->	gen_server:start(?MODULE, Cap, []);
+		false -> {error, "Capacity must be positive integer"}
+	end.
 
 set(FS, Key, Value, C) ->
 	gen_server:call(FS, {set, {Key, Value, C}}).
@@ -36,12 +39,10 @@ stop(FS) ->
 init(Cap) -> 
 	{ok, {Cap, []}}.
 
-
-%% TODO: CHECK/TEST KEY COHERENCY AND KEY CONCURRENCY
-
 handle_call(Request, _From, {Cap, Queue} = State) -> 
 	case Request of
 		{insert, {Key, _Val, _C} = Item} ->
+			% Check if key exists
 			case lists:keymember(Key, 1, Queue) of
 				true ->
 					{reply, {error, "Key already exists"}, State};
@@ -49,14 +50,16 @@ handle_call(Request, _From, {Cap, Queue} = State) ->
 					insert_item(Item, State)
 			end;
 		{read, Key} ->
+			% Get key
 			case lists:keyfind(Key, 1, Queue) of
 				{Key, Val, _C} = Item ->
-					% new state has reordered queue
+					% Reorder queue
 					{reply, {ok, Val}, {Cap, lists:keydelete(Key, 1, Queue) ++ [Item]}};
 				false ->
 					{reply, nothing, State}
 			end;
 		{update, {Key, _Val, _C} = Item} ->
+			% Check if key exists
 			case lists:keymember(Key, 1, Queue) of
 				true ->
 					update_item(Item, State);
@@ -64,6 +67,7 @@ handle_call(Request, _From, {Cap, Queue} = State) ->
 					{reply, {error, "Key does not exists"}, State}
 			end;
 		{set, {Key, _Val, _C} = Item} ->
+			% Check if key exists
 			case lists:keymember(Key, 1, Queue) of
 				true ->
 					update_item(Item, State);
@@ -78,7 +82,7 @@ handle_call(Request, _From, {Cap, Queue} = State) ->
 
 handle_cast(_Request, _State) -> undefined.
 
-%% separation of concern functions
+%% separation of concerns
 insert_item({_Key, _Val, C} = Item, {Cap, Queue} = State) ->
 	case C =< Cap of
 		true ->
@@ -97,7 +101,7 @@ insert_item({_Key, _Val, C} = Item, {Cap, Queue} = State) ->
 update_item({Key, _Val, C} = Item, {Cap, Queue} = State) ->
 	case C =< Cap of
 		true ->
-			% update and reorder in queue
+			% Update and reorder in queue
 			NewQueue = lists:keydelete(Key, 1, Queue) ++ [Item],
 			case is_exceeded_capacity(Cap, NewQueue) of
 				true ->
@@ -111,6 +115,7 @@ update_item({Key, _Val, C} = Item, {Cap, Queue} = State) ->
 	end.
 
 upsert_item(Key, Fun, {_Cap, Queue} = State) ->
+	% Get key
 	case lists:keyfind(Key, 1, Queue) of
 		{Key, Val, _C} ->
 			Arg = {existing, Val};
